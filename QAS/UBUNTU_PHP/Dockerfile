@@ -1,11 +1,21 @@
 FROM ubuntu:xenial
 MAINTAINER Wodby <admin@wodby.com>
 
+# Copied from: https://github.com/Wodby/drupal-php/tree/master/7.0
+
+# buidl with:
+#  docker build -t wodby-on-ubuntu .
+
+# @todo:
+# annot load Zend OPcache - it was already loaded
+# php_1      | [16-Nov-2016 10:29:54 UTC] PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in Unknown on line 0
+
 # Install packages
 RUN apt-get -y update \
     && apt-get -y install \
         pkg-config \
-        unzip \ 
+        unzip \
+        bzip2 \
         #libressl \
         ca-certificates \
         openssh-client \
@@ -81,26 +91,26 @@ RUN apt-get -y update \
 
     # Create symlinks for backward compatibility
     ln -sf /usr/bin/php7.0 /usr/bin/php && \
-    ln -sf /usr/sbin/php-fpm7 /usr/bin/php-fpm && \
+    ln -sf /usr/sbin/php-fpm7.0 /usr/bin/php-fpm && \
 
-    mkdir -p /etc/php/7.0/conf.d && \
+    mkdir -p /etc/php/7.0/fpm/conf.d && \
 
     # Install imagick
     sed -ie 's/-n//g' /usr/bin/pecl && \
     yes | pecl install imagick && \
-    echo 'extension=imagick.so' > /etc/php/7.0/conf.d/imagick.ini && \
+    echo 'extension=imagick.so' > /etc/php/7.0/fpm/conf.d/imagick.ini && \
 
     # Install uploadprogess
     cd /tmp/ && wget https://github.com/Jan-E/uploadprogress/archive/master.zip && \
     unzip master.zip && \
     cd uploadprogress-master/ && \
-    phpize7 && ./configure --with-php-config=/usr/bin/php-config7 && \
+    phpize && ./configure --with-php-config=/usr/bin/php-config && \
     make && make install && \
-    echo 'extension=uploadprogress.so' > /etc/php/7.0/conf.d/20_uploadprogress.ini && \
+    echo 'extension=uploadprogress.so' > /etc/php/7.0/fpm/conf.d/20_uploadprogress.ini && \
     cd .. && rm -rf ./master.zip ./uploadprogress-master && \
 
     # Disable Xdebug
-    rm /etc/php7.0/conf.d/xdebug.ini && \
+    #rm /etc/php7.0/conf.d/xdebug.ini && \
 
     # Install composer
     curl -sS https://getcomposer.org/installer | php7.0 -- --install-dir=/usr/local/bin --filename=composer && \
@@ -119,12 +129,16 @@ RUN apt-get -y update \
     chmod +x /usr/local/bin/drupal && \
 
     # Cleanup
-    apt-get purge \
+    apt-get -y purge \
         *-dev \
-        build-base \
+        build-essential \
         autoconf \
         libtool \
         && \
+
+    apt-get -y clean && \
+    apt-get -y autoclean && \
+    apt-get -y autoremove && \
 
     rm -rf \
         /usr/include/php \
@@ -146,22 +160,22 @@ RUN sed -i \
         -e "s/^display_startup_errors.*/display_startup_errors = On/" \
         -e "s/^track_errors.*/track_errors = On/" \
         -e "s/^mysqlnd.collect  _memory_statistics.*/mysqlnd.collect_memory_statistics = On/" \
-        /etc/php/7.0/php.ini && \
+        /etc/php/7.0/fpm/php.ini && \
 
-    echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/php.ini
+    echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/fpm/php.ini
 
 # Copy PHP configs
-COPY 00_opcache.ini /etc/php/7.0/conf.d/
-COPY 00_xdebug.ini /etc/php/7.0/conf.d/
-COPY php-fpm.conf /etc/php/7.0/
+COPY 00_opcache.ini /etc/php/7.0/fpm/conf.d/
+COPY 00_xdebug.ini /etc/php/7.0/fpm/conf.d/
+COPY php-fpm.conf /etc/php/7.0/fpm/
 
 # Add default drush aliases
 RUN mkdir -p /etc/drush/site-aliases
 COPY default.aliases.drushrc.php /etc/drush/site-aliases/
 
 # Create user www-data
-RUN addgroup -g 82 -S www-data && \
-	adduser -u 82 -D -S -G www-data www-data
+#RUN addgroup --gid 82 --system www-data && \
+#	adduser --uid 82 --no-create-home --system --gid 82 www-data
 
 # Create work dir
 RUN mkdir -p /var/www/html && \
@@ -171,12 +185,21 @@ WORKDIR /var/www/html
 VOLUME /var/www/html
 EXPOSE 9000
 
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+    apt-get -y install nodejs && \
+    npm install -g phantomjs@1.9.8 casperjs backstopjs && \
+    npm cache -g clean && \
+    chown www-data:www-data /usr/lib/node_modules -R && \
+    ln -sf /usr/bin/python3.5 /usr/bin/python
+
 # Init www-data user
 USER www-data
+
 RUN composer global require hirak/prestissimo:^0.3 --optimize-autoloader && \
     rm -rf ~/.composer/.cache && \
     drupal init --override
 
 USER root
+
 COPY docker-entrypoint.sh /usr/local/bin/
 CMD docker-entrypoint.sh
