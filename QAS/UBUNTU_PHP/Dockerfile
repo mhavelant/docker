@@ -1,32 +1,31 @@
-FROM phusion/baseimage:0.9.19
 # FROM ubuntu:xenial
+# Better:
+FROM phusion/baseimage:0.9.19
+# Might be smaller:
+# FROM debian:jessie
 
 MAINTAINER MHavelant <mhavelant@brainsum.com>
 
-# Copied from: https://github.com/Wodby/drupal-php/tree/master/7.0
+# This Dockerfile has been copied from: https://github.com/Wodby/drupal-php/tree/master/7.0
 
-# Before the refactor:
-# wodby-on-baseimage      latest              104e1e8495d5        35 minutes ago      837.5 MB
-# wodby-on-ubuntu         latest              6c4bbc788639        About an hour ago   742.6 MB
+# Before the refactor:   wodby-on-baseimage      latest              104e1e8495d5        35 minutes ago      837.5 MB
+# After the refactor:    wodby-on-baseimage      latest              e09f84d187db        35 seconds ago      664.2 MB
+# After the refactor#2:  wodby-on-baseimage      latest              72fa45aa0d74        16 seconds ago      664.1 MB
+# Refactor#3             drupal_php              latest              d10ab6e5dbe0        3 minutes ago       583.4 MB
+# Refactor#4             drupal_php              latest              6097933d9482        4 minutes ago       572.6 MB
 
-# After the refactor:
-# wodby-on-baseimage      latest              e09f84d187db        35 seconds ago      664.2 MB
-
-# After the refactor#2:
-# wodby-on-baseimage      latest              72fa45aa0d74        16 seconds ago      664.1 MB
-
-# Refactor#3
-# drupal_php              latest              d10ab6e5dbe0        3 minutes ago       583.4 MB
+# Notes:
+# Ref3: Wget phantomjs instead of npm install
+# Refactor#4 | Lots of doc rm-s
 
 # build with:
-#  docker build -t wodby-on-ubuntu .
+#  docker build -t drupal_php .
 
 # lint with:
 # ~/www/docker/node_modules/dockerfilelint/bin/dockerfilelint ~/www/docker/QAS/UBUNTU_PHP/Dockerfile
 
 # After build cleanup
-# docker rmi $(docker images -f "dangling=true" -q)
-# docker volume rm $(docker volume ls -qf dangling=true)
+# docker rmi $(docker images -f "dangling=true" -q) && docker volume rm $(docker volume ls -qf dangling=true)
 
 # @todo:
 # cannot load Zend OPcache - it was already loaded
@@ -178,25 +177,57 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
 
     echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/fpm/php.ini
 
-
+# @todo: Maybe expldoes this into 2 dockerfiles? One base and one QAS?
 # Add default drush aliases | 186MB
 RUN mkdir -p /etc/drush/site-aliases && \
     mkdir -p /var/www/html && \
     chown -R www-data:www-data /var/www && \
-    # Install PhantomJS
+    # Install PhantomJS through zip. 66MB
     cd /usr/local/share && \
     wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
     tar xjf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
     rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    ln -s /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/phantomjs && \
-    # Install CasperJS
+    ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs && \
+    ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/phantomjs && \
+    # Install CasperJS through npm. 2.3MB
+    ln -sf /usr/bin/python3.5 /usr/bin/python && \
     npm install -g casperjs  && \
-    # Install BackstopJS
+    # Install BackstopJS through npm. 37MB
     npm install -g backstopjs && \
     # Cleanup
+    cd /usr/local/share/phantomjs-2.1.1-linux-x86_64 && \
+    rm -rf \
+        ChangeLog \
+        LICENSE.BSD \
+        README.md \
+        examples \
+        third-party.txt && \
+    cd /usr/lib/node_modules/backstopjs && \
+    rm -rf \
+        README.md \
+        backstop.json \
+        backstop_production.json \
+        bower.json \
+        LICENSE \
+        index.html \
+        backstop_data \
+        homepage \
+        test \
+        examples && \
+    cd /usr/lib/node_modules/casperjs && \
+    rm -rf \
+        CHANGELOG.md \
+        CONTRIBUTING.md \
+        CONTRIBUTORS.md \
+        LICENSE.md \
+        Makefile \
+        README.md \
+        casperjs.gemspec \
+        docs \
+        samples \
+        tests && \
     npm cache -g clean && \
     chown www-data:www-data /usr/lib/node_modules -R && \
-    ln -sf /usr/bin/python3.5 /usr/bin/python && \
     rm -rf \
         /tmp/* \
         /root/.composer \
