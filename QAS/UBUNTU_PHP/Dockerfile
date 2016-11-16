@@ -1,57 +1,69 @@
-FROM ubuntu:xenial
-MAINTAINER Wodby <admin@wodby.com>
+FROM phusion/baseimage:0.9.19
+# FROM ubuntu:xenial
+
+MAINTAINER MHavelant <mhavelant@brainsum.com>
 
 # Copied from: https://github.com/Wodby/drupal-php/tree/master/7.0
 
-# buidl with:
+# Before the refactor:
+# wodby-on-baseimage      latest              104e1e8495d5        35 minutes ago      837.5 MB
+# wodby-on-ubuntu         latest              6c4bbc788639        About an hour ago   742.6 MB
+
+# After the refactor:
+# wodby-on-baseimage      latest              e09f84d187db        35 seconds ago      664.2 MB
+
+# After the refactor#2:
+# wodby-on-baseimage      latest              72fa45aa0d74        16 seconds ago      664.1 MB
+
+# Refactor#3
+# drupal_php              latest              d10ab6e5dbe0        3 minutes ago       583.4 MB
+
+# build with:
 #  docker build -t wodby-on-ubuntu .
 
+# lint with:
+# ~/www/docker/node_modules/dockerfilelint/bin/dockerfilelint ~/www/docker/QAS/UBUNTU_PHP/Dockerfile
+
+# After build cleanup
+# docker rmi $(docker images -f "dangling=true" -q)
+# docker volume rm $(docker volume ls -qf dangling=true)
+
 # @todo:
-# annot load Zend OPcache - it was already loaded
+# cannot load Zend OPcache - it was already loaded
 # php_1      | [16-Nov-2016 10:29:54 UTC] PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in Unknown on line 0
 
-# Install packages
-RUN apt-get -y update \
-    && apt-get -y install \
+# Install packages | 240MB
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+    apt-get -y update && \
+    apt-get -y --no-install-recommends install \
         pkg-config \
+        fontconfig \
         unzip \
         bzip2 \
-        #libressl \
         ca-certificates \
         openssh-client \
-        rsync \
         git \
         curl \
         wget \
         gzip \
         patch \
         perl \
-        #pcre \ below one is new
-        pcre2-utils \
-        #imap \
+        libpcre2-dev \
         imagemagick \
-        mariadb-client \
+        nodejs \
 
         # Temp packages
-        #build-base \ below one is new
         build-essential \
         autoconf \
         libtool \
         php7.0-dev \
-        #pcre-dev \
-        #imagemagick-dev \ below one is new
-        imagemagick \
 
         # PHP packages
         php7.0 \
         php7.0-fpm \
         php7.0-opcache \
-        #php7.0-session \
         php7.0-dom \
-        # new addition
         php7.0-common \
-        # new addition
-        php7.0-cli \
         php7.0-xml \
         php7.0-xmlreader \
         php7.0-ctype \
@@ -61,35 +73,40 @@ RUN apt-get -y update \
         php7.0-posix \
         php7.0-curl \
         php7.0-pdo \
-        #php7.0-pdo_mysql \
         php7.0-sockets \
-        #php7.0-zlib \
         php7.0-mcrypt \
         php7.0-mysqli \
         php7.0-sqlite3 \
         php7.0-bz2 \
         php7.0-phar \
-        #php7.0-openssl \
         php7.0-posix \
         php7.0-zip \
         php7.0-calendar \
         php7.0-iconv \
         php7.0-imap \
         php7.0-soap \
-        php7.0-dev \
-        #php7.0-pear \
-        #php7.0-redis \
         php7.0-mbstring \
-        #php7.0-xdebug \
         php7.0-exif \
         php7.0-xsl \
         php7.0-ldap \
         php7.0-bcmath \
-        #php7.0-memcached \
-
+        php-memcached \
+        php-pear \
+        php-redis \
+        php-xdebug \
+        #php7.0-cli \
+        #php7.0-openssl \
+        #php7.0-zlib \
+        #php7.0-pdo_mysql \
+        #php7.0-session \
+        #imap \
+        #rsync \
+        #libressl \
+        #mariadb-client \
+        #pcre
+        #pcre2-utils \
         && \
 
-    # Create symlinks for backward compatibility
     ln -sf /usr/bin/php7.0 /usr/bin/php && \
     ln -sf /usr/sbin/php-fpm7.0 /usr/bin/php-fpm && \
 
@@ -110,7 +127,7 @@ RUN apt-get -y update \
     cd .. && rm -rf ./master.zip ./uploadprogress-master && \
 
     # Disable Xdebug
-    #rm /etc/php7.0/conf.d/xdebug.ini && \
+    #rm /etc/php7.0/fpm/conf.d/xdebug.ini && \
 
     # Install composer
     curl -sS https://getcomposer.org/installer | php7.0 -- --install-dir=/usr/local/bin --filename=composer && \
@@ -127,8 +144,12 @@ RUN apt-get -y update \
     # Install Drupal Console
     curl https://drupalconsole.com/installer -o /usr/local/bin/drupal && \
     chmod +x /usr/local/bin/drupal && \
-
-    # Cleanup
+    rm -rf \
+        /var/lib/apt/lists/* \
+        /var/cache/apt/* \
+        /usr/include/php \
+        /usr/lib/php/build && \
+    # Cleanupetc
     apt-get -y purge \
         *-dev \
         build-essential \
@@ -140,15 +161,8 @@ RUN apt-get -y update \
     apt-get -y autoclean && \
     apt-get -y autoremove && \
 
-    rm -rf \
-        /usr/include/php \
-        /usr/lib/php/build \
-        /var/cache/apt/* \
-        /tmp/* \
-        /root/.composer
-
-# Configure php.ini
-RUN sed -i \
+    # Configure php.ini
+    sed -i \
         -e "s/^expose_php.*/expose_php = Off/" \
         -e "s/^;date.timezone.*/date.timezone = UTC/" \
         -e "s/^memory_limit.*/memory_limit = -1/" \
@@ -164,42 +178,51 @@ RUN sed -i \
 
     echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/fpm/php.ini
 
-# Copy PHP configs
-COPY 00_opcache.ini /etc/php/7.0/fpm/conf.d/
-COPY 00_xdebug.ini /etc/php/7.0/fpm/conf.d/
+
+# Add default drush aliases | 186MB
+RUN mkdir -p /etc/drush/site-aliases && \
+    mkdir -p /var/www/html && \
+    chown -R www-data:www-data /var/www && \
+    # Install PhantomJS
+    cd /usr/local/share && \
+    wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    tar xjf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+    ln -s /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/phantomjs && \
+    # Install CasperJS
+    npm install -g casperjs  && \
+    # Install BackstopJS
+    npm install -g backstopjs && \
+    # Cleanup
+    npm cache -g clean && \
+    chown www-data:www-data /usr/lib/node_modules -R && \
+    ln -sf /usr/bin/python3.5 /usr/bin/python && \
+    rm -rf \
+        /tmp/* \
+        /root/.composer \
+        /var/tmp/*
+
+COPY default.aliases.drushrc.php /etc/drush/site-aliases/
+COPY 00_opcache.ini 00_xdebug.ini /etc/php/7.0/fpm/conf.d/
 COPY php-fpm.conf /etc/php/7.0/fpm/
 
-# Add default drush aliases
-RUN mkdir -p /etc/drush/site-aliases
-COPY default.aliases.drushrc.php /etc/drush/site-aliases/
-
+# Ubuntu base image = www-data already there with UID 33
 # Create user www-data
 #RUN addgroup --gid 82 --system www-data && \
 #	adduser --uid 82 --no-create-home --system --gid 82 www-data
-
-# Create work dir
-RUN mkdir -p /var/www/html && \
-    chown -R www-data:www-data /var/www
 
 WORKDIR /var/www/html
 VOLUME /var/www/html
 EXPOSE 9000
 
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
-    apt-get -y install nodejs && \
-    npm install -g phantomjs@1.9.8 casperjs backstopjs && \
-    npm cache -g clean && \
-    chown www-data:www-data /usr/lib/node_modules -R && \
-    ln -sf /usr/bin/python3.5 /usr/bin/python
-
 # Init www-data user
 USER www-data
 
+# Composer stuff | 13MB
 RUN composer global require hirak/prestissimo:^0.3 --optimize-autoloader && \
     rm -rf ~/.composer/.cache && \
     drupal init --override
 
 USER root
-
 COPY docker-entrypoint.sh /usr/local/bin/
 CMD docker-entrypoint.sh
