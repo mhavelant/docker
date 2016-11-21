@@ -31,6 +31,9 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 # cannot load Zend OPcache - it was already loaded
 # php_1      | [16-Nov-2016 10:29:54 UTC] PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in Unknown on line 0
 
+# @todo:
+# PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in <b>Unknown</b> on line <b>0</b><br />"
+
 # Install packages | 240MB
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
     apt-get -y update && \
