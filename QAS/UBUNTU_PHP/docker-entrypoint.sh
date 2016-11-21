@@ -34,3 +34,7 @@ fi
 #fi
 
 exec php-fpm
+
+if [ -n "$PHP_WORKING_DIR" ]; then
+    cd "$PHP_WORKING_DIR"
+fi

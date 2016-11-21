@@ -99,9 +99,9 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
         #php7.0-pdo_mysql \
         #php7.0-session \
         #imap \
-        #rsync \
+        rsync \
         #libressl \
-        #mariadb-client \
+        mariadb-client \
         #pcre
         #pcre2-utils \
         && \
@@ -256,4 +256,4 @@ RUN composer global require hirak/prestissimo:^0.3 --optimize-autoloader && \
 
 USER root
 COPY docker-entrypoint.sh /usr/local/bin/
-CMD docker-entrypoint.sh
+ENTRYPOINT docker-entrypoint.sh
