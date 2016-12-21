@@ -27,6 +27,12 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 # After build cleanup
 # docker rmi $(docker images -f "dangling=true" -q) && docker volume rm $(docker volume ls -qf dangling=true)
 
+# Push to docker hub
+#   docker login
+#   docker images (get the image hash)
+#   docker tag <hash> havelantmate/drupal_php:<whatever>
+#   docker push havelantmate/drupal_php
+
 # @todo:
 # cannot load Zend OPcache - it was already loaded
 # php_1      | [16-Nov-2016 10:29:54 UTC] PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in Unknown on line 0
