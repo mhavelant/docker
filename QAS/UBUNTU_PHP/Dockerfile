@@ -19,7 +19,8 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 # Refactor#4 | Lots of doc rm-s
 
 # build with:
-#  docker build -t drupal_php .
+# docker build -t drupal_php .
+# docker build -t drupal_php . --no-cache --rm -t havelantmate/drupal_php:Backstop2.6.13-SlimerJS
 
 # lint with:
 # ~/www/docker/node_modules/dockerfilelint/bin/dockerfilelint ~/www/docker/QAS/UBUNTU_PHP/Dockerfile
@@ -30,7 +31,7 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 # Push to docker hub
 #   docker login
 #   docker images (get the image hash)
-#   docker tag <hash> havelantmate/drupal_php:<whatever>
+#   Optionally, but build is tagging it: docker tag <hash> havelantmate/drupal_php:<whatever>
 #   docker push havelantmate/drupal_php
 
 # @todo:
@@ -102,17 +103,12 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
         php-pear \
         php-redis \
         php-xdebug \
-        #php7.0-cli \
-        #php7.0-openssl \
-        #php7.0-zlib \
-        #php7.0-pdo_mysql \
-        #php7.0-session \
-        #imap \
         rsync \
-        #libressl \
         mariadb-client \
-        #pcre
-        #pcre2-utils \
+
+        # Stuff for SlimerJS.
+        firefox=45.* \
+        xvfb \
         && \
 
     ln -sf /usr/bin/php7.0 /usr/bin/php && \
@@ -186,7 +182,7 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
 
     echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/fpm/php.ini
 
-# @todo: Maybe expldoes this into 2 dockerfiles? One base and one QAS?
+# @todo: Maybe expldoe this into 2 dockerfiles? One base and one QAS?
 # Add default drush aliases | 186MB
 RUN mkdir -p /etc/drush/site-aliases && \
     mkdir -p /var/www/html && \
@@ -201,6 +197,10 @@ RUN mkdir -p /etc/drush/site-aliases && \
     # Install CasperJS through npm. 2.3MB
     ln -sf /usr/bin/python3.5 /usr/bin/python && \
     npm install -g casperjs  && \
+    # Install SlimerJS through npm.
+    npm install -g slimerjs  && \
+    # Disable strict JS so console doesn't get flooded with useless messages.
+    sed -ie 's/"javascript.options.strict", true/"javascript.options.strict", false/g' /usr/lib/node_modules/slimerjs/src/defaults/preferences/prefs.js && \
     # Install BackstopJS through npm. 37MB
     npm install -g backstopjs && \
     # Cleanup
@@ -259,10 +259,10 @@ EXPOSE 9000
 USER www-data
 
 # Composer stuff | 13MB
-RUN composer global require hirak/prestissimo:^0.3 --optimize-autoloader && \
-    rm -rf ~/.composer/.cache && \
-    drupal init --override
+RUN composer global require hirak/prestissimo:^0.3.3 --optimize-autoloader && \
+    rm -rf ~/.composer/.cache
 
 USER root
 COPY docker-entrypoint.sh /usr/local/bin/
+ENV DISPLAY=localhost:0.0
 ENTRYPOINT docker-entrypoint.sh
