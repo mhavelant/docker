@@ -1,6 +1,6 @@
 # FROM ubuntu:xenial
 # Better:
-FROM phusion/baseimage:0.9.19
+FROM phusion/baseimage:0.9.22
 # Might be smaller:
 # FROM debian:jessie
 
@@ -43,6 +43,7 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 
 # Install packages | 240MB
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+    add-apt-repository ppa:jonathonf/firefox-esr && \
     apt-get -y update && \
     apt-get -y --no-install-recommends install \
         pkg-config \
@@ -107,7 +108,7 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
         mariadb-client \
 
         # Stuff for SlimerJS.
-        firefox=45.* \
+        firefox-esr=52.* \
         xvfb \
         && \
 
@@ -261,6 +262,8 @@ USER www-data
 # Composer stuff | 13MB
 RUN composer global require hirak/prestissimo:^0.3.3 --optimize-autoloader && \
     rm -rf ~/.composer/.cache
+
+# @todo: Add 66af8b5ed7b349faa804f6c52ba9c1bf to /etc/machine-id
 
 USER root
 COPY docker-entrypoint.sh /usr/local/bin/
