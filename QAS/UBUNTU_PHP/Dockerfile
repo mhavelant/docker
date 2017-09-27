@@ -26,6 +26,7 @@ MAINTAINER MHavelant <mhavelant@brainsum.com>
 # ~/www/docker/node_modules/dockerfilelint/bin/dockerfilelint ~/www/docker/QAS/UBUNTU_PHP/Dockerfile
 
 # After build cleanup
+# docker container ps -a, remove stuck containers
 # docker rmi $(docker images -f "dangling=true" -q) && docker volume rm $(docker volume ls -qf dangling=true)
 
 # Push to docker hub
