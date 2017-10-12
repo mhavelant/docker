@@ -1,50 +1,24 @@
-# FROM ubuntu:xenial
-# Better:
 FROM phusion/baseimage:0.9.22
-# Might be smaller:
-# FROM debian:jessie
 
 MAINTAINER MHavelant <mhavelant@brainsum.com>
 
-# This Dockerfile has been copied from: https://github.com/Wodby/drupal-php/tree/master/7.0
+LABEL Description="Contains PHP7.0, Node7, Chrome 61, Firefox 52, SlimerJS 0.10, BackstopJS 3.0, PhantomJS 2.1"
 
-# Before the refactor:   wodby-on-baseimage      latest              104e1e8495d5        35 minutes ago      837.5 MB
-# After the refactor:    wodby-on-baseimage      latest              e09f84d187db        35 seconds ago      664.2 MB
-# After the refactor#2:  wodby-on-baseimage      latest              72fa45aa0d74        16 seconds ago      664.1 MB
-# Refactor#3             drupal_php              latest              d10ab6e5dbe0        3 minutes ago       583.4 MB
-# Refactor#4             drupal_php              latest              6097933d9482        4 minutes ago       572.6 MB
-
-# Notes:
-# Ref3: Wget phantomjs instead of npm install
-# Refactor#4 | Lots of doc rm-s
-
-# build with:
-# docker build -t drupal_php .
-# docker build -t drupal_php . --no-cache --rm -t havelantmate/drupal_php:Backstop2.6.13-SlimerJS
-
-# lint with:
-# ~/www/docker/node_modules/dockerfilelint/bin/dockerfilelint ~/www/docker/QAS/UBUNTU_PHP/Dockerfile
-
-# After build cleanup
-# docker container ps -a, remove stuck containers
-# docker rmi $(docker images -f "dangling=true" -q) && docker volume rm $(docker volume ls -qf dangling=true)
-
-# Push to docker hub
-#   docker login
-#   docker images (get the image hash)
-#   Optionally, but build is tagging it: docker tag <hash> havelantmate/drupal_php:<whatever>
-#   docker push havelantmate/drupal_php
-
-# @todo:
-# cannot load Zend OPcache - it was already loaded
-# php_1      | [16-Nov-2016 10:29:54 UTC] PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in Unknown on line 0
-
-# @todo:
-# PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/imagick.so' - /usr/lib/php/20151012/imagick.so: cannot open shared object file: No such file or directory in <b>Unknown</b> on line <b>0</b><br />"
+ENV NODE_ENV=production
 
 # Install packages | 240MB
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+# curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
+    VERSION=node_7.x && \
+    DISTRO="$(lsb_release -s -c)" && \
+    echo "deb https://deb.nodesource.com/$VERSION $DISTRO main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    echo "deb-src https://deb.nodesource.com/$VERSION $DISTRO main" | tee -a /etc/apt/sources.list.d/nodesource.list && \
+
     add-apt-repository ppa:jonathonf/firefox-esr && \
+
+    curl --silent https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+
     apt-get -y update && \
     apt-get -y --no-install-recommends install \
         pkg-config \
@@ -111,6 +85,9 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
         # Stuff for SlimerJS.
         firefox-esr=52.* \
         xvfb \
+
+        # Stuff for chromy.
+        google-chrome-stable \
         && \
 
     ln -sf /usr/bin/php7.0 /usr/bin/php && \
@@ -261,7 +238,7 @@ EXPOSE 9000
 USER www-data
 
 # Composer stuff | 13MB
-RUN composer global require hirak/prestissimo:^0.3.3 --optimize-autoloader && \
+RUN composer global require hirak/prestissimo --optimize-autoloader && \
     rm -rf ~/.composer/.cache
 
 # @todo: Add 66af8b5ed7b349faa804f6c52ba9c1bf to /etc/machine-id
