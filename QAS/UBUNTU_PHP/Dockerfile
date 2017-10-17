@@ -1,18 +1,28 @@
 FROM phusion/baseimage:0.9.22
 
-MAINTAINER MHavelant <mhavelant@brainsum.com>
+LABEL maintainer="mhavelant"
 
-LABEL Description="Contains PHP7.0, Node7, Chrome 61, Firefox 52, SlimerJS 0.10, BackstopJS 3.0, PhantomJS 2.1"
+LABEL Description="Contains PHP7.0, Node6, Chrome (beta) 62, Firefox 52, SlimerJS 0.10, BackstopJS 3.0, PhantomJS 2.1"
 
-ENV NODE_ENV=production
+ENV PATH="/var/www/.composer/vendor/bin:$PATH" \
+    DISPLAY=localhost:0.0 \
+    OS_DISTRO="xenial" \
+    NODE_VERSION=node_6.x \
+    NODE_ENV=production \
+    FIREFOX_VERSION=52.* \
+    # For firefox 55+. We could also use slimerjs --headless.
+    # @todo: When this works, remove xvfb.
+    MOZ_HEADLESS=1 \
+    CHROME_STABILITY=beta \
+    CHROME_VERSION=62.* \
+    PHP_VERSION=7.0 \
+    PHANTOMJS_VERSION=2.1.1
 
 # Install packages | 240MB
 # curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
 RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-    VERSION=node_7.x && \
-    DISTRO="$(lsb_release -s -c)" && \
-    echo "deb https://deb.nodesource.com/$VERSION $DISTRO main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    echo "deb-src https://deb.nodesource.com/$VERSION $DISTRO main" | tee -a /etc/apt/sources.list.d/nodesource.list && \
+    echo "deb https://deb.nodesource.com/${NODE_VERSION} ${OS_DISTRO} main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    echo "deb-src https://deb.nodesource.com/${NODE_VERSION} ${OS_DISTRO} main" | tee -a /etc/apt/sources.list.d/nodesource.list && \
 
     add-apt-repository ppa:jonathonf/firefox-esr && \
 
@@ -41,40 +51,40 @@ RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key
         build-essential \
         autoconf \
         libtool \
-        php7.0-dev \
+        php${PHP_VERSION}-dev \
 
         # PHP packages
-        php7.0 \
-        php7.0-fpm \
-        php7.0-opcache \
-        php7.0-dom \
-        php7.0-common \
-        php7.0-xml \
-        php7.0-xmlreader \
-        php7.0-ctype \
-        php7.0-ftp \
-        php7.0-gd \
-        php7.0-json \
-        php7.0-posix \
-        php7.0-curl \
-        php7.0-pdo \
-        php7.0-sockets \
-        php7.0-mcrypt \
-        php7.0-mysqli \
-        php7.0-sqlite3 \
-        php7.0-bz2 \
-        php7.0-phar \
-        php7.0-posix \
-        php7.0-zip \
-        php7.0-calendar \
-        php7.0-iconv \
-        php7.0-imap \
-        php7.0-soap \
-        php7.0-mbstring \
-        php7.0-exif \
-        php7.0-xsl \
-        php7.0-ldap \
-        php7.0-bcmath \
+        php${PHP_VERSION} \
+        php${PHP_VERSION}-fpm \
+        php${PHP_VERSION}-opcache \
+        php${PHP_VERSION}-dom \
+        php${PHP_VERSION}-common \
+        php${PHP_VERSION}-xml \
+        php${PHP_VERSION}-xmlreader \
+        php${PHP_VERSION}-ctype \
+        php${PHP_VERSION}-ftp \
+        php${PHP_VERSION}-gd \
+        php${PHP_VERSION}-json \
+        php${PHP_VERSION}-posix \
+        php${PHP_VERSION}-curl \
+        php${PHP_VERSION}-pdo \
+        php${PHP_VERSION}-sockets \
+        php${PHP_VERSION}-mcrypt \
+        php${PHP_VERSION}-mysqli \
+        php${PHP_VERSION}-sqlite3 \
+        php${PHP_VERSION}-bz2 \
+        php${PHP_VERSION}-phar \
+        php${PHP_VERSION}-posix \
+        php${PHP_VERSION}-zip \
+        php${PHP_VERSION}-calendar \
+        php${PHP_VERSION}-iconv \
+        php${PHP_VERSION}-imap \
+        php${PHP_VERSION}-soap \
+        php${PHP_VERSION}-mbstring \
+        php${PHP_VERSION}-exif \
+        php${PHP_VERSION}-xsl \
+        php${PHP_VERSION}-ldap \
+        php${PHP_VERSION}-bcmath \
         php-memcached \
         php-pear \
         php-redis \
@@ -83,22 +93,22 @@ RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key
         mariadb-client \
 
         # Stuff for SlimerJS.
-        firefox-esr=52.* \
+        firefox-esr=${FIREFOX_VERSION} \
         xvfb \
 
-        # Stuff for chromy.
-        google-chrome-stable \
+        # Stuff for chromy. Backstop needs version 62 for some reason.
+        google-chrome-${CHROME_STABILITY}=${CHROME_VERSION} \
         && \
 
-    ln -sf /usr/bin/php7.0 /usr/bin/php && \
-    ln -sf /usr/sbin/php-fpm7.0 /usr/bin/php-fpm && \
+    ln -sf /usr/bin/php${PHP_VERSION} /usr/bin/php && \
+    ln -sf /usr/sbin/php-fpm${PHP_VERSION} /usr/bin/php-fpm && \
 
-    mkdir -p /etc/php/7.0/fpm/conf.d && \
+    mkdir -p /etc/php/${PHP_VERSION}/fpm/conf.d && \
 
     # Install imagick
     sed -ie 's/-n//g' /usr/bin/pecl && \
     yes | pecl install imagick && \
-    echo 'extension=imagick.so' > /etc/php/7.0/fpm/conf.d/imagick.ini && \
+    echo 'extension=imagick.so' > /etc/php/${PHP_VERSION}/fpm/conf.d/imagick.ini && \
 
     # Install uploadprogess
     cd /tmp/ && wget https://github.com/Jan-E/uploadprogress/archive/master.zip && \
@@ -106,23 +116,23 @@ RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key
     cd uploadprogress-master/ && \
     phpize && ./configure --with-php-config=/usr/bin/php-config && \
     make && make install && \
-    echo 'extension=uploadprogress.so' > /etc/php/7.0/fpm/conf.d/20_uploadprogress.ini && \
+    echo 'extension=uploadprogress.so' > /etc/php/${PHP_VERSION}/fpm/conf.d/20_uploadprogress.ini && \
     cd .. && rm -rf ./master.zip ./uploadprogress-master && \
 
     # Disable Xdebug
-    #rm /etc/php7.0/fpm/conf.d/xdebug.ini && \
+    #rm /etc/php${PHP_VERSION}/fpm/conf.d/xdebug.ini && \
 
     # Install composer
-    curl -sS https://getcomposer.org/installer | php7.0 -- --install-dir=/usr/local/bin --filename=composer && \
+    curl -sS https://getcomposer.org/installer | php${PHP_VERSION} -- --install-dir=/usr/local/bin --filename=composer && \
 
     # Install PHPUnit
     curl -sSL https://phar.phpunit.de/phpunit.phar -o phpunit.phar && \
         chmod +x phpunit.phar && \
         mv phpunit.phar /usr/local/bin/phpunit && \
 
-    # Install drush
-    php -r "readfile('https://s3.amazonaws.com/files.drush.org/drush.phar');" > /usr/local/bin/drush && \
-    chmod +x /usr/local/bin/drush && \
+#    # Install drush
+#    php -r "readfile('https://s3.amazonaws.com/files.drush.org/drush.phar');" > /usr/local/bin/drush && \
+#    chmod +x /usr/local/bin/drush && \
 
     # Install Drupal Console
     curl https://drupalconsole.com/installer -o /usr/local/bin/drupal && \
@@ -157,22 +167,22 @@ RUN curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key
         -e "s/^display_startup_errors.*/display_startup_errors = On/" \
         -e "s/^track_errors.*/track_errors = On/" \
         -e "s/^mysqlnd.collect  _memory_statistics.*/mysqlnd.collect_memory_statistics = On/" \
-        /etc/php/7.0/fpm/php.ini && \
+        /etc/php/${PHP_VERSION}/fpm/php.ini && \
 
-    echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/7.0/fpm/php.ini
+    echo "error_log = \"/proc/self/fd/2\"" | tee -a /etc/php/${PHP_VERSION}/fpm/php.ini
 
-# @todo: Maybe expldoe this into 2 dockerfiles? One base and one QAS?
+# @todo: Maybe explode this into 2 dockerfiles? One base and one QAS?
 # Add default drush aliases | 186MB
 RUN mkdir -p /etc/drush/site-aliases && \
     mkdir -p /var/www/html && \
     chown -R www-data:www-data /var/www && \
     # Install PhantomJS through zip. 66MB
     cd /usr/local/share && \
-    wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    tar xjf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    rm phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs && \
-    ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/phantomjs && \
+    wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64.tar.bz2 && \
+    tar xjf phantomjs-${PHANTOMJS_VERSION}-linux-x86_64.tar.bz2 && \
+    rm phantomjs-${PHANTOMJS_VERSION}-linux-x86_64.tar.bz2 && \
+    ln -sf /usr/local/share/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs && \
+    ln -sf /usr/local/share/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64/bin/phantomjs /usr/local/phantomjs && \
     # Install CasperJS through npm. 2.3MB
     ln -sf /usr/bin/python3.5 /usr/bin/python && \
     npm install -g casperjs  && \
@@ -183,7 +193,7 @@ RUN mkdir -p /etc/drush/site-aliases && \
     # Install BackstopJS through npm. 37MB
     npm install -g backstopjs && \
     # Cleanup
-    cd /usr/local/share/phantomjs-2.1.1-linux-x86_64 && \
+    cd /usr/local/share/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64 && \
     rm -rf \
         ChangeLog \
         LICENSE.BSD \
@@ -222,8 +232,8 @@ RUN mkdir -p /etc/drush/site-aliases && \
         /var/tmp/*
 
 COPY default.aliases.drushrc.php /etc/drush/site-aliases/
-COPY 00_opcache.ini 00_xdebug.ini /etc/php/7.0/fpm/conf.d/
-COPY php-fpm.conf /etc/php/7.0/fpm/
+COPY 00_opcache.ini 00_xdebug.ini /etc/php/${PHP_VERSION}/fpm/conf.d/
+COPY php-fpm.conf /etc/php/${PHP_VERSION}/fpm/
 
 # Ubuntu base image = www-data already there with UID 33
 # Create user www-data
@@ -238,12 +248,9 @@ EXPOSE 9000
 USER www-data
 
 # Composer stuff | 13MB
-RUN composer global require hirak/prestissimo --optimize-autoloader && \
+RUN composer global require hirak/prestissimo drush/drush --optimize-autoloader && \
     rm -rf ~/.composer/.cache
-
-# @todo: Add 66af8b5ed7b349faa804f6c52ba9c1bf to /etc/machine-id
 
 USER root
 COPY docker-entrypoint.sh /usr/local/bin/
-ENV DISPLAY=localhost:0.0
 ENTRYPOINT docker-entrypoint.sh
