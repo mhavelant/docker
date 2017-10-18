@@ -13,7 +13,7 @@ ENV PATH="/var/www/.composer/vendor/bin:$PATH" \
     # For firefox 55+. We could also use slimerjs --headless.
     # @todo: When this works, remove xvfb.
     MOZ_HEADLESS=1 \
-    CHROME_STABILITY=beta \
+    CHROME_STABILITY=stable \
     CHROME_VERSION=62.* \
     PHP_VERSION=7.0 \
     PHANTOMJS_VERSION=2.1.1

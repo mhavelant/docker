@@ -42,6 +42,6 @@ For more info about the QAShot app please visit the [QAShot Github page](https:/
 |composer|||1.5.2|
 |-|hirak/prestissimo||0.3.7|
 |-|drush/drush||8.1.15|
-|google-chrome-beta|||62.0.3202.52|
+|google-chrome-stable|||62.0.3202.62-1|
 |firefox-esr|||52.4.0|
 |xvfb||||
