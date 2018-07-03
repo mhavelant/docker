@@ -1,31 +1,16 @@
-FROM alpine:edge
+FROM php:7.2.7-cli-alpine3.7
 
-LABEL version="1.2.0"
+LABEL version="1.1.0"
 LABEL description="Customized version from the bergil/docker-behat repo."
 LABEL maintainer="mhavelant@brainsum.com"
-LABEL "php version"="7.2.7"
 
-ENV PATH="/var/www/.composer/vendor/bin:$PATH"
+ENV PATH="/var/www/.composer/vendor/bin:$PATH" \
+    PHP_VERSION=7.2
 
-# Install PHP7 with needed exstentions and composer with hirak/prestissimo.
-RUN apk add --no-cache \
-        php7 \
-        php7-dom \
-        php7-curl \
-        php7-json \
-        php7-phar \
-        php7-openssl \
-        php7-mbstring \
-        php7-ctype \
-        php7-pdo_mysql \
-        php7-session \
-        php7-xml \
-        php7-xmlwriter \
-        php7-tokenizer \
-        php7-zip \
-        php7-gd \
-        curl \
+RUN apk add --no-cache libzip-dev \
     && rm -fr /var/cache/apk/* \
+    && docker-php-ext-configure zip --with-libzip \
+    && docker-php-ext-install zip \
     && curl -sS https://getcomposer.org/installer | php -- --filename=composer \
     --install-dir=/usr/bin \
     && composer global require "hirak/prestissimo:^0.3" --optimize-autoloader \
