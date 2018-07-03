@@ -253,4 +253,4 @@ RUN composer global require hirak/prestissimo drush/drush --optimize-autoloader 
 
 USER root
 COPY docker-entrypoint.sh /usr/local/bin/
-ENTRYPOINT docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
