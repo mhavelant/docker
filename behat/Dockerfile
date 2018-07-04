@@ -1,6 +1,6 @@
 FROM alpine:edge
 
-LABEL version="1.2.0"
+LABEL version="1.3.0"
 LABEL description="Customized version from the bergil/docker-behat repo."
 LABEL maintainer="mhavelant@brainsum.com"
 LABEL "php version"="7.2.7"
@@ -24,6 +24,8 @@ RUN apk add --no-cache \
         php7-tokenizer \
         php7-zip \
         php7-gd \
+        php7-fileinfo \
+        php7-imagick \
         curl \
     && rm -fr /var/cache/apk/* \
     && curl -sS https://getcomposer.org/installer | php -- --filename=composer \
@@ -38,6 +40,7 @@ WORKDIR /srv
 # Install and initialize Behat, create folder for artifacts.
 RUN composer install \
     && bin/behat --init \
-    && mkdir -p artifacts
+    && mkdir -p artifacts \
+    && mkdir -p src
 
 ENTRYPOINT ["/srv/entrypoint.sh"]
