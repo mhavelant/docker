@@ -20,8 +20,10 @@
     "novaway/common-contexts": "^2.0"
   },
   "suggest": {
-    "ext-fileinfo": "The bex/behat-screenshot requires this for clear_screenshot_directory",
-    "ext-imagick": "The bex/behat-screenshot requires this for screenshot_taking_mode"
+    "ext-fileinfo": "The bex/behat-screenshot requires this for clear_screenshot_directory.",
+    "ext-imagick": "The bex/behat-screenshot requires this for screenshot_taking_mode.",
+    "ext-pcntl": "Drush suggests this.",
+    "ext-posix": "Ext ext-pcntl will be happier with this."
   },
   "autoload": {
     "psr-4": {

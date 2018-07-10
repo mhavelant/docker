@@ -1,11 +1,11 @@
 FROM alpine:edge
 
-LABEL version="1.3.0"
+LABEL version="1.4.0"
 LABEL description="Customized version from the bergil/docker-behat repo."
 LABEL maintainer="mhavelant@brainsum.com"
 LABEL "php version"="7.2.7"
 
-ENV PATH="/var/www/.composer/vendor/bin:$PATH"
+ENV PATH="/root/.composer/vendor/bin:$PATH"
 
 # Install PHP7 with needed exstentions and composer with hirak/prestissimo.
 RUN apk add --no-cache \
@@ -26,11 +26,14 @@ RUN apk add --no-cache \
         php7-gd \
         php7-fileinfo \
         php7-imagick \
+        php7-pcntl \
+        php7-posix \
         curl \
     && rm -fr /var/cache/apk/* \
     && curl -sS https://getcomposer.org/installer | php -- --filename=composer \
     --install-dir=/usr/bin \
     && composer global require "hirak/prestissimo:^0.3" --optimize-autoloader \
+    && composer global require "drush/drush:^9.3" --optimize-autoloader \
     && rm -rf ~/.composer/.cache
 
 # Add files and folders to container.
@@ -41,6 +44,7 @@ WORKDIR /srv
 RUN composer install \
     && bin/behat --init \
     && mkdir -p artifacts \
-    && mkdir -p src
+    && mkdir -p src \
+    && mkdir -p /etc/drush/sites
 
 ENTRYPOINT ["/srv/entrypoint.sh"]
