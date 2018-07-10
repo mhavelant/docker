@@ -1,6 +1,6 @@
 FROM alpine:edge
 
-LABEL version="1.4.0"
+LABEL version="1.4.1"
 LABEL description="Customized version from the bergil/docker-behat repo."
 LABEL maintainer="mhavelant@brainsum.com"
 LABEL "php version"="7.2.7"
@@ -46,5 +46,7 @@ RUN composer install \
     && mkdir -p artifacts \
     && mkdir -p src \
     && mkdir -p /etc/drush/sites
+
+COPY ["drush.yml", "/etc/drush/"]
 
 ENTRYPOINT ["/srv/entrypoint.sh"]
